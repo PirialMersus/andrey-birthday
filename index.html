@@ -188,12 +188,24 @@
             border-radius: 0 2px 2px 0;
         }
 
+        /* --- WRAPPER: ПОЛНОЭКРАННЫЙ FLEX-ОВЕРЛЕЙ ДЛЯ ЦЕНТРОВКИ --- */
+        #birthday-modal-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
         /* --- КРАСИВАЯ КРИСТАЛЬНО-ЧИТАЕМАЯ ОТКРЫТКА --- */
         #birthday-congratulation-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
             background: rgba(10, 8, 20, 0.97);
             backdrop-filter: blur(40px);
             -webkit-backdrop-filter: blur(40px);
@@ -201,12 +213,9 @@
             padding: 34px 32px 32px;
             text-align: center;
             color: #fff;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
             max-width: 480px;
-            width: 90%;
-            max-height: 90dvh;
+            width: 100%;
+            max-height: calc(100svh - 32px);
             overflow-y: auto;
             overflow-x: hidden;
             border: 1px solid rgba(212, 175, 55, 0.4);
@@ -214,7 +223,7 @@
                 0 0 70px rgba(0, 0, 0, 0.9),
                 0 0 100px rgba(212, 175, 55, 0.2),
                 0 0 160px rgba(139, 92, 246, 0.15);
-            transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
@@ -230,70 +239,38 @@
             }
 
             .birthday-photo-container {
-                width: 96px;
-                height: 96px;
-                margin-bottom: 12px;
+                width: 96px !important;
+                height: 96px !important;
+                margin-bottom: 10px !important;
             }
 
             .birthday-photo-frame {
-                width: 90px;
-                height: 90px;
+                width: 90px !important;
+                height: 90px !important;
             }
 
             .modal-main-title {
-                font-size: 20px;
-                margin-bottom: 2px;
+                font-size: 19px !important;
+                margin-bottom: 2px !important;
             }
 
             .modal-birthday-subtitle {
-                font-size: 17px;
-                margin-bottom: 10px;
+                font-size: 16px !important;
+                margin-bottom: 10px !important;
             }
 
             .modal-zen-wish-text {
-                font-size: 14px;
-                margin-bottom: 16px;
+                font-size: 14px !important;
+                margin-bottom: 14px !important;
             }
 
             .restart-experience-button {
-                padding: 10px 26px;
-                font-size: 15px;
+                padding: 9px 24px !important;
+                font-size: 14px !important;
             }
         }
 
-        @media (max-height: 500px) {
-            #birthday-congratulation-modal {
-                padding: 14px 20px 16px;
-                top: 50%;
-                max-height: 95dvh;
-            }
 
-            .birthday-photo-container {
-                width: 72px;
-                height: 72px;
-                margin-bottom: 8px;
-            }
-
-            .birthday-photo-frame {
-                width: 68px;
-                height: 68px;
-            }
-
-            .modal-main-title {
-                font-size: 17px;
-            }
-
-            .modal-birthday-subtitle {
-                font-size: 14px;
-                margin-bottom: 8px;
-            }
-
-            .modal-zen-wish-text {
-                font-size: 13px;
-                line-height: 1.5;
-                margin-bottom: 12px;
-            }
-        }
 
         #birthday-congratulation-modal::before {
             content: '';
@@ -427,20 +404,22 @@
     </div>
 
     <!-- Монолитная читаемая открытка С НАСТОЯЩИМ ПОРТРЕТОМ -->
-    <div id="birthday-congratulation-modal">
-        <div class="birthday-photo-container">
-            <div class="birthday-photo-frame">
-                <img src="fas.jpg" alt="Мастер Андрей Веретенников">
+    <div id="birthday-modal-wrapper">
+        <div id="birthday-congratulation-modal">
+            <div class="birthday-photo-container">
+                <div class="birthday-photo-frame">
+                    <img src="fas.jpg" alt="Мастер Андрей Веретенников">
+                </div>
             </div>
+            <h1 class="modal-main-title">Андрею Веретенникову</h1>
+            <h2 class="modal-birthday-subtitle">С Днем Рождения, Мастер!</h2>
+            <p class="modal-zen-wish-text">
+                Желаем благодарных, целеустремленных учеников,<br>
+                множества радостных людей вокруг и спасённых мурчащих хвостиков!<br>
+                Спасибо за ваш свет, мудрость и доброе сердце! 🐾✨
+            </p>
+            <button class="restart-experience-button" id="restart-experience-button">Погладить кота снова ✨</button>
         </div>
-        <h1 class="modal-main-title">Андрею Веретенникову</h1>
-        <h2 class="modal-birthday-subtitle">С Днем Рождения, Мастер!</h2>
-        <p class="modal-zen-wish-text">
-            Желаем благодарных, целеустремленных учеников,<br>
-            множества радостных людей вокруг и спасённых мурчащих хвостиков!<br>
-            Спасибо за твой свет, мудрость и доброе сердце! 🐾✨
-        </p>
-        <button class="restart-experience-button" id="restart-experience-button">Погладить кота снова ✨</button>
     </div>
 
     <!-- 2D Canvas для звёздочек -->
@@ -460,6 +439,7 @@
         const interactionHintElement = document.getElementById('interaction-hint-overlay');
         const holdProgressContainer = document.getElementById('hold-progress-indicator');
         const holdProgressFill = document.getElementById('hold-progress-fill-bar');
+        const modalWrapper = document.getElementById('birthday-modal-wrapper');
         const congratulationModal = document.getElementById('birthday-congratulation-modal');
         const restartButton = document.getElementById('restart-experience-button');
         const starCanvas = document.getElementById('star-overlay-canvas');
@@ -944,22 +924,26 @@
             holdProgressContainer.classList.remove('visible-progress');
             hideHint();
 
-            gsap.fromTo(congratulationModal, 
-                { opacity: 0, scale: 0.75, y: -20 },
-                { opacity: 1, scale: 1.0, y: 0, duration: 1.4, ease: 'back.out(1.4)', onStart: () => {
-                    congratulationModal.style.pointerEvents = 'all';
-                }}
+            gsap.set(congratulationModal, { scale: 0.75, y: -20 });
+            modalWrapper.style.pointerEvents = 'all';
+            gsap.fromTo(modalWrapper,
+                { opacity: 0 },
+                { opacity: 1, duration: 0.5, ease: 'power2.out' }
             );
+            gsap.to(congratulationModal, {
+                scale: 1.0, y: 0, duration: 1.4, ease: 'back.out(1.4)'
+            });
         }
 
         restartButton.addEventListener('click', (e) => {
             e.stopPropagation();
             stopPurrSound();
 
-            gsap.to(congratulationModal, {
-                opacity: 0, scale: 0.8, duration: 0.6, ease: 'power2.in',
+            gsap.to(modalWrapper, {
+                opacity: 0, duration: 0.5, ease: 'power2.in',
                 onComplete: () => {
-                    congratulationModal.style.pointerEvents = 'none';
+                    modalWrapper.style.pointerEvents = 'none';
+                    gsap.set(congratulationModal, { scale: 0.75, y: -20 });
                     startParticleAssemblySequence();
                 }
             });
