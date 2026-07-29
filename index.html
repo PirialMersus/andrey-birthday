@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>С Днем Рождения, Мастер Андрей Веретенников!</title>
+    <meta name="description" content="Интерактивное поздравление для Просветленного Мастера Андрея Веретенникова">
+    
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020204;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: filter 0.8s ease;
+        }
+
+        /* Размытие котика после сборки */
+        canvas.blurred-cat {
+            filter: blur(14px) brightness(0.75);
+        }
+
+        #star-overlay-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(1, 1, 2, 0.98) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Премиальная дзен-кнопка по центру заблюренного кота */
+        #pet-start-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+        }
+
+        #pet-start-modal-overlay.active-overlay {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .pet-action-button {
+            background: rgba(14, 11, 26, 0.88);
+            border: 1.5px solid rgba(212, 175, 55, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 225, 130, 0.95);
+            padding: 20px 48px;
+            border-radius: 60px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 22px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow:
+                0 0 50px rgba(212, 175, 55, 0.25),
+                0 0 100px rgba(139, 92, 246, 0.2),
+                inset 0 0 30px rgba(212, 175, 55, 0.1);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            animation: pulseGlowBtn 2.2s infinite ease-in-out;
+        }
+
+        .pet-action-button:hover {
+            background: rgba(28, 22, 50, 0.95);
+            border-color: rgba(212, 175, 55, 0.9);
+            transform: scale(1.06);
+            color: #ffffff;
+            box-shadow:
+                0 0 70px rgba(212, 175, 55, 0.4),
+                0 0 140px rgba(139, 92, 246, 0.3);
+        }
+
+        @keyframes pulseGlowBtn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        #interaction-hint-overlay {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(212, 175, 55, 0.8);
+            font-size: 19px;
+            font-style: italic;
+            font-weight: 300;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            letter-spacing: 0.5px;
+            max-width: 85%;
+            line-height: 1.5;
+            opacity: 0;
+        }
+
+        #hold-progress-indicator {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(139, 92, 246, 0.08);
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #hold-progress-indicator.visible-progress {
+            opacity: 1;
+        }
+
+        #hold-progress-fill-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.8), rgba(212, 175, 55, 0.95));
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* --- КРАСИВАЯ КРИСТАЛЬНО-ЧИТАЕМАЯ ОТКРЫТКА --- */
+        #birthday-congratulation-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(10, 8, 20, 0.97);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 32px;
+            padding: 34px 32px 32px;
+            text-align: center;
+            color: #fff;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            max-width: 480px;
+            width: 90%;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow:
+                0 0 70px rgba(0, 0, 0, 0.9),
+                0 0 100px rgba(212, 175, 55, 0.2),
+                0 0 160px rgba(139, 92, 246, 0.15);
+            transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        #birthday-congratulation-modal::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.7), rgba(139, 92, 246, 0.5), rgba(255, 215, 0, 0.8), rgba(212, 175, 55, 0.3));
+            background-size: 200% 200%;
+            border-radius: 34px;
+            z-index: -1;
+            animation: borderShimmer 8s infinite alternate ease-in-out;
+        }
+
+        @keyframes borderShimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Золотой нимб-аура вокруг портрета */
+        .birthday-photo-container {
+            position: relative;
+            width: 136px;
+            height: 136px;
+            margin: 0 auto 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .birthday-photo-container::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #ffd700, #8b5cf6, #d4af37, #ffd700);
+            animation: auraRotate 7s linear infinite;
+            filter: blur(2px);
+        }
+
+        @keyframes auraRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .birthday-photo-frame {
+            position: relative;
+            width: 128px;
+            height: 128px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2.5px solid rgba(255, 215, 0, 0.9);
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.35);
+            z-index: 2;
+            background: #000;
+        }
+
+        .birthday-photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .modal-main-title {
+            font-size: 28px;
+            font-weight: 400;
+            color: #ffd700;
+            margin-bottom: 4px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .modal-birthday-subtitle {
+            font-size: 22px;
+            font-weight: 500;
+            color: #c4b5fd;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-zen-wish-text {
+            font-size: 16.5px;
+            font-weight: 300;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.95);
+            line-height: 1.65;
+            margin-bottom: 24px;
+            padding: 0 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+        }
+
+        .restart-experience-button {
+            background: rgba(212, 175, 55, 0.12);
+            border: 1.5px solid rgba(212, 175, 55, 0.6);
+            color: #ffe182;
+            padding: 12px 34px;
+            border-radius: 50px;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            letter-spacing: 1.5px;
+            transition: all 0.35s ease;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+        }
+
+        .restart-experience-button:hover {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: rgba(212, 175, 55, 0.95);
+            color: #ffffff;
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.35);
+            transform: scale(1.04);
+        }
+    </style>
+</head>
+<body>
+    <!-- Кнопка поверх заблюренного кота -->
+    <div id="pet-start-modal-overlay">
+        <button class="pet-action-button" id="start-petting-btn">Погладь кота 10 секунд ✨</button>
+    </div>
+
+    <div id="interaction-hint-overlay">Погладь кота мышкой и удерживай 10 секунд…</div>
+
+    <div id="hold-progress-indicator">
+        <div id="hold-progress-fill-bar"></div>
+    </div>
+
+    <!-- Монолитная читаемая открытка С НАСТОЯЩИМ ПОРТРЕТОМ -->
+    <div id="birthday-congratulation-modal">
+        <div class="birthday-photo-container">
+            <div class="birthday-photo-frame">
+                <img src="fas.jpg" alt="Мастер Андрей Веретенников">
+            </div>
+        </div>
+        <h1 class="modal-main-title">Андрею Веретенникову</h1>
+        <h2 class="modal-birthday-subtitle">С Днем Рождения, Мастер!</h2>
+        <p class="modal-zen-wish-text">
+            Желаем тебе благодарных, целеустремленных учеников,<br>
+            множества радостных людей вокруг и спасённых мурчащих хвостиков!<br>
+            Спасибо за твой свет, мудрость и доброе сердце! 🐾✨
+        </p>
+        <button class="restart-experience-button" id="restart-experience-button">Погладить кота снова ✨</button>
+    </div>
+
+    <!-- 2D Canvas для звёздочек -->
+    <canvas id="star-overlay-canvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>
+    (() => {
+        const TOTAL_PARTICLE_COUNT = 8000;
+        const ASSEMBLY_PARTICLE_COUNT = 4500;
+        const PET_TARGET_TIME_MS = 10000;
+
+        const petStartOverlay = document.getElementById('pet-start-modal-overlay');
+        const startPettingBtn = document.getElementById('start-petting-btn');
+        const interactionHintElement = document.getElementById('interaction-hint-overlay');
+        const holdProgressContainer = document.getElementById('hold-progress-indicator');
+        const holdProgressFill = document.getElementById('hold-progress-fill-bar');
+        const congratulationModal = document.getElementById('birthday-congratulation-modal');
+        const restartButton = document.getElementById('restart-experience-button');
+        const starCanvas = document.getElementById('star-overlay-canvas');
+        const starCtx = starCanvas.getContext('2d');
+
+        function resizeStarCanvas() {
+            starCanvas.width = window.innerWidth;
+            starCanvas.height = window.innerHeight;
+        }
+        resizeStarCanvas();
+        window.addEventListener('resize', resizeStarCanvas);
+
+        let currentState = 'assembling';
+        let isInteractionUnlocked = false;
+        let cursorOverCat = false;
+        let holdStartTime = null;
+        let accumulatedPetTime = 0;
+        let hintPulseTween = null;
+
+        let mouseScreenX = -9999;
+        let mouseScreenY = -9999;
+
+        // Звук мурчания
+        const purrAudio = new Audio('purr.mp3');
+        purrAudio.loop = true;
+        purrAudio.volume = 0.85;
+
+        function playPurrSound() {
+            if (!isInteractionUnlocked) return;
+            if (purrAudio.paused) {
+                purrAudio.play().catch(() => {});
+            }
+        }
+
+        function stopPurrSound() {
+            if (!purrAudio.paused) {
+                purrAudio.pause();
+            }
+        }
+
+        const petUniforms = {
+            uPetPos: { value: new THREE.Vector3(9999, 9999, 0) },
+            uPetStrength: { value: 0.0 }
+        };
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+
+        function optimalCameraZ() {
+            const aspect = window.innerWidth / window.innerHeight;
+            return aspect < 1 ? 7.6 + (1 - aspect) * 4.0 : 6.0;
+        }
+
+        camera.position.set(0, 1.3, optimalCameraZ());
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x020204);
+        document.body.appendChild(renderer.domElement);
+
+        const raycaster = new THREE.Raycaster();
+        const ndcVec = new THREE.Vector2();
+
+        // ОСВЕЩЕНИЕ
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(4, 10, 5);
+        scene.add(dirLight);
+
+        // --- ФОНОВАЯ ДЗЕН-ПЫЛЬЦА ---
+        const dustGeometry = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(TOTAL_PARTICLE_COUNT * 3);
+        const colors = new Float32Array(TOTAL_PARTICLE_COUNT * 3);
+        const sizes = new Float32Array(TOTAL_PARTICLE_COUNT);
+
+        const scatterPositions = new Float32Array(TOTAL_PARTICLE_COUNT * 3);
+        const noiseOffsets = new Float32Array(TOTAL_PARTICLE_COUNT * 3);
+
+        for (let i = 0; i < TOTAL_PARTICLE_COUNT * 3; i += 3) {
+            scatterPositions[i] = (Math.random() - 0.5) * 22;
+            scatterPositions[i + 1] = (Math.random() - 0.5) * 16;
+            scatterPositions[i + 2] = (Math.random() - 0.5) * 10;
+
+            noiseOffsets[i] = Math.random() * 400;
+            noiseOffsets[i + 1] = Math.random() * 400;
+            noiseOffsets[i + 2] = Math.random() * 400;
+        }
+        dustPositions.set(scatterPositions);
+
+        const goldColor = new THREE.Color(0xffd700);
+        const whiteColor = new THREE.Color(0xffffff);
+        const tmpCol = new THREE.Color();
+
+        for (let i = 0; i < TOTAL_PARTICLE_COUNT; i++) {
+            tmpCol.copy(Math.random() > 0.4 ? goldColor : whiteColor).multiplyScalar(0.6);
+            colors[i * 3] = tmpCol.r;
+            colors[i * 3 + 1] = tmpCol.g;
+            colors[i * 3 + 2] = tmpCol.b;
+            sizes[i] = 0.04 + Math.random() * 0.07;
+        }
+
+        dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        dustGeometry.setAttribute('pColor', new THREE.BufferAttribute(colors, 3));
+        dustGeometry.setAttribute('pSize', new THREE.BufferAttribute(sizes, 1));
+
+        const dustMaterial = new THREE.ShaderMaterial({
+            uniforms: { uAlpha: { value: 0.25 } },
+            vertexShader: `
+                attribute float pSize;
+                attribute vec3 pColor;
+                varying vec3 vCol;
+                void main() {
+                    vCol = pColor;
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    gl_PointSize = pSize * (290.0 / -mv.z);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vCol;
+                uniform float uAlpha;
+                void main() {
+                    float d = length(gl_PointCoord - vec2(0.5));
+                    if (d > 0.5) discard;
+                    gl_FragColor = vec4(vCol, step(d, 0.48) * 0.3 * uAlpha);
+                }
+            `,
+            blending: THREE.AdditiveBlending,
+            depthTest: true,
+            depthWrite: false,
+            transparent: true
+        });
+
+        const dustPoints = new THREE.Points(dustGeometry, dustMaterial);
+        scene.add(dustPoints);
+
+        // --- ИЗЯЩНЫЕ ИСКРЫ СБОРКИ ---
+        const assemblyGeo = new THREE.BufferGeometry();
+        const assemblyStartPos = new Float32Array(ASSEMBLY_PARTICLE_COUNT * 3);
+        const assemblyTargetPos = new Float32Array(ASSEMBLY_PARTICLE_COUNT * 3);
+        const assemblyCurrentPos = new Float32Array(ASSEMBLY_PARTICLE_COUNT * 3);
+        const assemblyColors = new Float32Array(ASSEMBLY_PARTICLE_COUNT * 3);
+
+        for (let i = 0; i < ASSEMBLY_PARTICLE_COUNT; i++) {
+            assemblyStartPos[i * 3] = (Math.random() - 0.5) * 20;
+            assemblyStartPos[i * 3 + 1] = (Math.random() - 0.5) * 16;
+            assemblyStartPos[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+            tmpCol.copy(Math.random() > 0.45 ? goldColor : whiteColor);
+            assemblyColors[i * 3] = tmpCol.r;
+            assemblyColors[i * 3 + 1] = tmpCol.g;
+            assemblyColors[i * 3 + 2] = tmpCol.b;
+        }
+
+        assemblyCurrentPos.set(assemblyStartPos);
+        assemblyGeo.setAttribute('position', new THREE.BufferAttribute(assemblyCurrentPos, 3));
+        assemblyGeo.setAttribute('pColor', new THREE.BufferAttribute(assemblyColors, 3));
+
+        const assemblyMat = new THREE.ShaderMaterial({
+            uniforms: { uAlpha: { value: 1.0 } },
+            vertexShader: `
+                attribute vec3 pColor;
+                varying vec3 vColor;
+                void main() {
+                    vColor = pColor;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    gl_PointSize = (65.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                uniform float uAlpha;
+                void main() {
+                    vec2 uv = gl_PointCoord - vec2(0.5);
+                    float d = length(uv);
+                    if (d > 0.5) discard;
+                    float glow = smoothstep(0.5, 0.0, d);
+                    gl_FragColor = vec4(vColor, glow * uAlpha * 0.9);
+                }
+            `,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            depthWrite: false
+        });
+
+        const assemblyPoints = new THREE.Points(assemblyGeo, assemblyMat);
+        assemblyPoints.renderOrder = 100;
+        scene.add(assemblyPoints);
+
+        const assemblyProgress = { value: 0 };
+
+        // --- 3D КАТ ---
+        let mainCatGroup = null;
+        let originalMaterial = null;
+
+        function startParticleAssemblySequence() {
+            currentState = 'assembling';
+            isInteractionUnlocked = false;
+            cursorOverCat = false;
+            accumulatedPetTime = 0;
+            holdProgressFill.style.width = '0%';
+
+            if (mainCatGroup) mainCatGroup.visible = false;
+            if (originalMaterial) originalMaterial.opacity = 0.0;
+            
+            assemblyMat.uniforms.uAlpha.value = 1.0;
+            assemblyProgress.value = 0;
+
+            renderer.domElement.classList.remove('blurred-cat');
+            petStartOverlay.classList.remove('active-overlay');
+
+            gsap.to(assemblyProgress, {
+                value: 1.0,
+                duration: 2.8,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    if (mainCatGroup) mainCatGroup.visible = true;
+                    if (originalMaterial) gsap.to(originalMaterial, { opacity: 1.0, duration: 1.2 });
+                    gsap.to(assemblyMat.uniforms.uAlpha, { value: 0.0, duration: 1.2 });
+                    
+                    renderer.domElement.classList.add('blurred-cat');
+                    petStartOverlay.classList.add('active-overlay');
+                    currentState = 'waitingButtonClick';
+                }
+            });
+        }
+
+        const loader = new THREE.GLTFLoader();
+        loader.load('cat.gltf', (gltf) => {
+            mainCatGroup = gltf.scene;
+            mainCatGroup.visible = false;
+
+            mainCatGroup.position.set(0, -0.35, 0);
+            mainCatGroup.rotation.set(0.12, -0.17, 0);
+            mainCatGroup.scale.set(11.0, 11.0, 11.0);
+            mainCatGroup.updateMatrixWorld(true);
+
+            let vertexIndex = 0;
+            mainCatGroup.traverse((child) => {
+                if (child.isMesh) {
+                    originalMaterial = child.material;
+                    if (originalMaterial) {
+                        originalMaterial.transparent = true;
+                        originalMaterial.opacity = 0.0;
+                        originalMaterial.color.setHex(0xffffff);
+                        originalMaterial.roughness = 0.82;
+
+                        originalMaterial.onBeforeCompile = (shader) => {
+                            shader.uniforms.uPetPos = petUniforms.uPetPos;
+                            shader.uniforms.uPetStrength = petUniforms.uPetStrength;
+
+                            shader.vertexShader = `
+                                uniform vec3 uPetPos;
+                                uniform float uPetStrength;
+                                varying vec3 vPetWorldPos;
+                                ${shader.vertexShader}
+                            `.replace(
+                                '#include <begin_vertex>',
+                                `
+                                #include <begin_vertex>
+                                vec4 wPos = modelMatrix * vec4(position, 1.0);
+                                vPetWorldPos = wPos.xyz;
+                                
+                                float dPet = length(wPos.xyz - uPetPos.xyz);
+                                float petRadius = 0.45;
+                                
+                                if (dPet < petRadius && uPetStrength > 0.001) {
+                                    float petFactor = smoothstep(petRadius, 0.0, dPet) * uPetStrength;
+                                    transformed += normal * (petFactor * 0.0017);
+                                }
+                                `
+                            );
+
+                            shader.fragmentShader = `
+                                uniform vec3 uPetPos;
+                                uniform float uPetStrength;
+                                varying vec3 vPetWorldPos;
+                                ${shader.fragmentShader}
+                            `.replace(
+                                '#include <dithering_fragment>',
+                                `
+                                #include <dithering_fragment>
+                                
+                                float dPetFrag = length(vPetWorldPos.xyz - uPetPos.xyz);
+                                float petRadiusFrag = 0.55;
+                                
+                                if (dPetFrag < petRadiusFrag && uPetStrength > 0.001) {
+                                    float sheen = smoothstep(petRadiusFrag, 0.0, dPetFrag) * uPetStrength;
+                                    vec3 silkSheen = vec3(0.95, 0.82, 0.5);
+                                    gl_FragColor.rgb += silkSheen * (sheen * 0.12);
+                                }
+                                `
+                            );
+                        };
+                    }
+
+                    const posAttr = child.geometry.attributes.position;
+                    const step = Math.max(1, Math.floor(posAttr.count / ASSEMBLY_PARTICLE_COUNT));
+                    const tempVec = new THREE.Vector3();
+
+                    for (let k = 0; k < posAttr.count && vertexIndex < ASSEMBLY_PARTICLE_COUNT; k += step) {
+                        tempVec.set(posAttr.getX(k), posAttr.getY(k), posAttr.getZ(k));
+                        tempVec.applyMatrix4(child.matrixWorld);
+
+                        assemblyTargetPos[vertexIndex * 3] = tempVec.x;
+                        assemblyTargetPos[vertexIndex * 3 + 1] = tempVec.y;
+                        assemblyTargetPos[vertexIndex * 3 + 2] = tempVec.z;
+
+                        vertexIndex++;
+                    }
+                }
+            });
+
+            scene.add(mainCatGroup);
+
+            // ПЕРВЫЙ ЗАПУСК
+            startParticleAssemblySequence();
+        });
+
+        // КЛИК ПО КНОПКЕ "Погладь кота 10 секунд ✨"
+        startPettingBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            purrAudio.play().then(() => { purrAudio.pause(); }).catch(() => {});
+
+            renderer.domElement.classList.remove('blurred-cat');
+            petStartOverlay.classList.remove('active-overlay');
+
+            isInteractionUnlocked = true;
+            currentState = 'catIdle';
+            startHintPulse();
+        });
+
+        function startHintPulse() {
+            gsap.fromTo(interactionHintElement, { opacity: 0 }, {
+                opacity: 0.75,
+                duration: 1.2,
+                ease: 'power2.out',
+                onComplete: () => {
+                    hintPulseTween = gsap.to(interactionHintElement, {
+                        opacity: 0.35, duration: 2.0, repeat: -1, yoyo: true, ease: 'sine.inOut'
+                    });
+                }
+            });
+        }
+
+        function hideHint() {
+            if (hintPulseTween) { hintPulseTween.kill(); hintPulseTween = null; }
+            gsap.to(interactionHintElement, { opacity: 0, duration: 0.5 });
+        }
+
+        function checkMouseIntersection() {
+            if (mouseScreenX < 0 || mouseScreenY < 0) return false;
+
+            ndcVec.x = (mouseScreenX / window.innerWidth) * 2 - 1;
+            ndcVec.y = -(mouseScreenY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(ndcVec, camera);
+
+            if (mainCatGroup && mainCatGroup.visible) {
+                const intersects = raycaster.intersectObject(mainCatGroup, true);
+                if (intersects.length > 0) {
+                    petUniforms.uPetPos.value.copy(intersects[0].point);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- ЗВЁЗДОЧКИ ---
+        const SPARKLE_2D_COUNT = 36;
+        const sparkles2D = [];
+        
+        for (let i = 0; i < SPARKLE_2D_COUNT; i++) {
+            sparkles2D.push({
+                rx: 75 + Math.random() * 75,
+                ry: 50 + Math.random() * 70,
+                freqX: 0.3 + Math.random() * 0.7,
+                freqY: 0.2 + Math.random() * 0.6,
+                phase: Math.random() * Math.PI * 2,
+                speed: 0.003 + Math.random() * 0.006,
+                size: 3.5 + Math.random() * 5.0,
+                twinklePhase: Math.random() * Math.PI * 2,
+                twinkleSpeed: 0.02 + Math.random() * 0.03,
+                color: Math.random() > 0.35 ? 'rgba(212, 175, 55, ' : 'rgba(255, 255, 255, '
+            });
+        }
+
+        let globalStarMasterAlpha = 0;
+
+        function render2DSparkles(time) {
+            starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+
+            if (cursorOverCat && globalStarMasterAlpha < 1.0) globalStarMasterAlpha += 0.04;
+            else if (!cursorOverCat && globalStarMasterAlpha > 0.0) globalStarMasterAlpha -= 0.04;
+
+            if (globalStarMasterAlpha > 0.001) {
+                for (let i = 0; i < SPARKLE_2D_COUNT; i++) {
+                    const sp = sparkles2D[i];
+                    
+                    sp.phase += sp.speed;
+                    sp.twinklePhase += sp.twinkleSpeed;
+
+                    const offsetX = Math.sin(sp.phase * sp.freqX) * sp.rx;
+                    const offsetY = Math.cos(sp.phase * sp.freqY + 0.5) * sp.ry;
+
+                    const sx = mouseScreenX + offsetX;
+                    const sy = mouseScreenY + offsetY;
+
+                    const twinkleAlpha = (Math.sin(sp.twinklePhase) * 0.5 + 0.5);
+                    const finalAlpha = twinkleAlpha * globalStarMasterAlpha * 0.9;
+
+                    if (finalAlpha > 0.01) {
+                        starCtx.save();
+                        starCtx.translate(sx, sy);
+                        starCtx.fillStyle = sp.color + finalAlpha + ')';
+                        
+                        starCtx.beginPath();
+                        for (let k = 0; k < 4; k++) {
+                            starCtx.rotate(Math.PI / 2);
+                            starCtx.lineTo(0, sp.size);
+                            starCtx.lineTo(sp.size * 0.25, sp.size * 0.25);
+                        }
+                        starCtx.fill();
+                        starCtx.restore();
+                    }
+                }
+            }
+        }
+
+        // НЕПРЕРЫВНАЯ ОБРАБОТКА В КАЖДОМ КАДРЕ (ДАЖЕ ЕСЛИ МЫШКА НЕ ДВИГАЕТСЯ!)
+        function updateHoverStateInFrame() {
+            if (!isInteractionUnlocked || currentState !== 'catIdle') return;
+
+            const isHit = checkMouseIntersection();
+
+            if (isHit) {
+                if (!cursorOverCat) {
+                    cursorOverCat = true;
+                    holdStartTime = performance.now();
+                    playPurrSound();
+                    
+                    gsap.to(petUniforms.uPetStrength, { value: 1.0, duration: 0.4 });
+                    gsap.to(dustMaterial.uniforms.uAlpha, { value: 0.85, duration: 0.4 });
+                } else {
+                    playPurrSound(); // Поддерживаем непрерывное воспроизведение
+                }
+
+                // НЕПРЕРЫВНЫЙ ОТСЧЕТ ТАЙМЕРА В КАЖДОМ КАДРЕ!
+                if (holdStartTime !== null) {
+                    const elapsed = performance.now() - holdStartTime;
+                    const totalProgress = Math.min((accumulatedPetTime + elapsed) / PET_TARGET_TIME_MS, 1.0);
+                    
+                    holdProgressContainer.classList.add('visible-progress');
+                    holdProgressFill.style.width = (totalProgress * 100) + '%';
+
+                    if (totalProgress >= 1.0) {
+                        triggerBirthdayModal();
+                    }
+                }
+            } else {
+                if (cursorOverCat) {
+                    if (holdStartTime !== null) {
+                        accumulatedPetTime += (performance.now() - holdStartTime);
+                    }
+                    cursorOverCat = false;
+                    holdStartTime = null;
+                    stopPurrSound();
+                    holdProgressContainer.classList.remove('visible-progress');
+
+                    gsap.to(petUniforms.uPetStrength, { value: 0.0, duration: 0.5 });
+                    gsap.to(dustMaterial.uniforms.uAlpha, { value: 0.25, duration: 0.5 });
+                }
+            }
+        }
+
+        function triggerBirthdayModal() {
+            currentState = 'congratulated';
+            cursorOverCat = false;
+            stopPurrSound();
+            holdProgressContainer.classList.remove('visible-progress');
+            hideHint();
+
+            gsap.fromTo(congratulationModal, 
+                { opacity: 0, scale: 0.75, y: -20 },
+                { opacity: 1, scale: 1.0, y: 0, duration: 1.4, ease: 'back.out(1.4)', onStart: () => {
+                    congratulationModal.style.pointerEvents = 'all';
+                }}
+            );
+        }
+
+        restartButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            stopPurrSound();
+
+            gsap.to(congratulationModal, {
+                opacity: 0, scale: 0.8, duration: 0.6, ease: 'power2.in',
+                onComplete: () => {
+                    congratulationModal.style.pointerEvents = 'none';
+                    startParticleAssemblySequence();
+                }
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            mouseScreenX = e.clientX;
+            mouseScreenY = e.clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            mouseScreenX = t.clientX;
+            mouseScreenY = t.clientY;
+        }, { passive: false });
+
+        document.addEventListener('touchstart', (e) => {
+            const t = e.touches[0];
+            mouseScreenX = t.clientX;
+            mouseScreenY = t.clientY;
+        });
+
+        document.addEventListener('touchend', () => {
+            mouseScreenX = -9999;
+            mouseScreenY = -9999;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now() * 0.001;
+
+            if (assemblyProgress.value < 1.0) {
+                const prog = assemblyProgress.value;
+                const arr = assemblyGeo.attributes.position.array;
+
+                for (let i = 0; i < ASSEMBLY_PARTICLE_COUNT; i++) {
+                    const i3 = i * 3;
+                    const sx = assemblyStartPos[i3];
+                    const sy = assemblyStartPos[i3 + 1];
+                    const sz = assemblyStartPos[i3 + 2];
+
+                    const tx = assemblyTargetPos[i3];
+                    const ty = assemblyTargetPos[i3 + 1];
+                    const tz = assemblyTargetPos[i3 + 2];
+
+                    arr[i3] = sx + (tx - sx) * prog;
+                    arr[i3 + 1] = sy + (ty - sy) * prog;
+                    arr[i3 + 2] = sz + (tz - sz) * prog;
+                }
+                assemblyGeo.attributes.position.needsUpdate = true;
+            }
+
+            // НЕПРЕРЫВНО ОБНОВЛЯЕМ НАВЕДЕНИЕ И ТАЙМЕР ГЛАЖЕНИЯ КАЖДЫЙ КАДР!
+            updateHoverStateInFrame();
+
+            render2DSparkles(time);
+
+            if (mainCatGroup && mainCatGroup.visible) {
+                mainCatGroup.position.y = -0.35 + Math.sin(time * 0.7) * 0.007;
+            }
+
+            camera.position.x = Math.sin(time * 0.04) * 0.25;
+            camera.position.y = 1.3 + Math.cos(time * 0.03) * 0.1;
+            camera.lookAt(0, -0.15, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    })();
+    </script>
+</body>
+</html>
