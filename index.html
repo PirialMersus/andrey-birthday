@@ -124,15 +124,16 @@
             50% { transform: scale(1.03); }
         }
 
+        /* Подсказка со значком звука */
         #interaction-hint-overlay {
             position: fixed;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(212, 175, 55, 0.8);
+            color: rgba(255, 225, 130, 0.9);
             font-size: 19px;
             font-style: italic;
-            font-weight: 300;
+            font-weight: 400;
             text-align: center;
             pointer-events: none;
             z-index: 10;
@@ -140,6 +141,28 @@
             max-width: 85%;
             line-height: 1.5;
             opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(14, 11, 26, 0.65);
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+        }
+
+        .sound-icon-pulse {
+            font-style: normal;
+            font-size: 20px;
+            display: inline-block;
+            animation: soundWavePulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes soundWavePulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.5)); }
+            50% { transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9)); }
         }
 
         #hold-progress-indicator {
@@ -277,7 +300,7 @@
             font-size: 16.5px;
             font-weight: 300;
             font-style: italic;
-            color: rgba(255, 255, 255, 0.95);
+            color: rgba(255, 255, 255, 0.88);
             line-height: 1.65;
             margin-bottom: 24px;
             padding: 0 10px;
@@ -314,7 +337,10 @@
         <button class="pet-action-button" id="start-petting-btn">Погладь кота 10 секунд ✨</button>
     </div>
 
-    <div id="interaction-hint-overlay">Погладь кота мышкой и удерживай 10 секунд…</div>
+    <div id="interaction-hint-overlay">
+        <span class="sound-icon-pulse">🔊</span>
+        <span>Погладь кота мышкой и удерживай 10 секунд…</span>
+    </div>
 
     <div id="hold-progress-indicator">
         <div id="hold-progress-fill-bar"></div>
@@ -330,7 +356,7 @@
         <h1 class="modal-main-title">Андрею Веретенникову</h1>
         <h2 class="modal-birthday-subtitle">С Днем Рождения, Мастер!</h2>
         <p class="modal-zen-wish-text">
-            Желаем тебе благодарных, целеустремленных учеников,<br>
+            Желаем благодарных, целеустремленных учеников,<br>
             множества радостных людей вокруг и спасённых мурчащих хвостиков!<br>
             Спасибо за твой свет, мудрость и доброе сердце! 🐾✨
         </p>
@@ -693,12 +719,12 @@
 
         function startHintPulse() {
             gsap.fromTo(interactionHintElement, { opacity: 0 }, {
-                opacity: 0.75,
+                opacity: 0.9,
                 duration: 1.2,
                 ease: 'power2.out',
                 onComplete: () => {
                     hintPulseTween = gsap.to(interactionHintElement, {
-                        opacity: 0.35, duration: 2.0, repeat: -1, yoyo: true, ease: 'sine.inOut'
+                        opacity: 0.45, duration: 2.0, repeat: -1, yoyo: true, ease: 'sine.inOut'
                     });
                 }
             });
@@ -787,7 +813,6 @@
             }
         }
 
-        // НЕПРЕРЫВНАЯ ОБРАБОТКА В КАЖДОМ КАДРЕ (ДАЖЕ ЕСЛИ МЫШКА НЕ ДВИГАЕТСЯ!)
         function updateHoverStateInFrame() {
             if (!isInteractionUnlocked || currentState !== 'catIdle') return;
 
@@ -802,10 +827,9 @@
                     gsap.to(petUniforms.uPetStrength, { value: 1.0, duration: 0.4 });
                     gsap.to(dustMaterial.uniforms.uAlpha, { value: 0.85, duration: 0.4 });
                 } else {
-                    playPurrSound(); // Поддерживаем непрерывное воспроизведение
+                    playPurrSound();
                 }
 
-                // НЕПРЕРЫВНЫЙ ОТСЧЕТ ТАЙМЕРА В КАЖДОМ КАДРЕ!
                 if (holdStartTime !== null) {
                     const elapsed = performance.now() - holdStartTime;
                     const totalProgress = Math.min((accumulatedPetTime + elapsed) / PET_TARGET_TIME_MS, 1.0);
@@ -910,7 +934,6 @@
                 assemblyGeo.attributes.position.needsUpdate = true;
             }
 
-            // НЕПРЕРЫВНО ОБНОВЛЯЕМ НАВЕДЕНИЕ И ТАЙМЕР ГЛАЖЕНИЯ КАЖДЫЙ КАДР!
             updateHoverStateInFrame();
 
             render2DSparkles(time);
